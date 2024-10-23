@@ -9,29 +9,14 @@ let rec print_term (t : pterm) : string =
   match t with
   | Var x -> x
   | App (t1, t2) -> "(" ^ (print_term t1) ^ " " ^ (print_term t2) ^ ")"
-  | Abs (x, t1) -> "(fun "ˆ x ˆ" -> " ˆ (print_term t) ˆ")"
+  | Abs (x, t1) -> "(fun " ^ x ^ " -> " ^ (print_term t) ^ ")"
 
 
 let compteur_var = ref 0
 
 let nouvelle_var () : string =
   compteur_var := !compteur_var + 1;
-  "X" ˆ string_of_int !compteur_var
-
-(* Renomme toutes les variables liees *)
-let rec alphaconv1 (t : pterm) : pterm =
-  match t with
-  | Var x -> Var x (* var libre *)
-  | App (t1, t2) -> App (alphaconv t1, alphaconv t2)
-  | Abs (x, t1) -> 
-      let newVar = nouvelle_var() in 
-      Abs (newVar, alphaconv (substitution x (Var newVar) t1))
-
-let rec alphaconv2 (t : pterm) (oldVar : string) : pterm =
-  match t with
-  | Var x -> if x = oldVar then Var nouvelle_var() else Var x 
-  | App (t1, t2) -> App (alphaconv t1 oldVar, alphaconv t2 oldVar)
-  | Abs (x, t1) -> if x = oldVar then Abs(nouvelle_var(), t1) else Abs (x, alphaconv t1 oldVar)
+  "X" ^ string_of_int !compteur_var
 
 (* Remplace toutes les occurences libres d’une variable donnee par un terme *)
 let rec substitution (x : string) (n : pterm) (t : pterm) : pterm =
@@ -39,6 +24,21 @@ let rec substitution (x : string) (n : pterm) (t : pterm) : pterm =
   | Var y -> if y = x then n else Var y
   | App (t1, t2) -> App (substitution x n t1, substitution x n t2) 
   | Abs (y, t1) -> if y = x then Abs (y, t1) else Abs (y, substitution x n t1)
+
+(* Renomme toutes les variables liees *)
+let rec alphaconv1 (t : pterm) : pterm =
+  match t with
+  | Var x -> Var x (* var libre *)
+  | App (t1, t2) -> App (alphaconv1 t1, alphaconv1 t2)
+  | Abs (x, t1) -> 
+      let newVar = nouvelle_var() in 
+      Abs (newVar, alphaconv1 (substitution x (Var newVar) t1))
+
+let rec alphaconv2 (t : pterm) (oldVar : string) : pterm =
+  match t with
+  | Var x -> if x = oldVar then Var (nouvelle_var ()) else Var x 
+  | App (t1, t2) -> App (alphaconv2 t1 oldVar, alphaconv2 t2 oldVar)
+  | Abs (x, t1) -> if x = oldVar then Abs(nouvelle_var(), t1) else Abs (x, alphaconv2 t1 oldVar)
 
 (* 
 1. Lorsqu'on est face à une application M N, on commence par tenter de réduire M (la fonction), avant de réduire N (l'argument);
@@ -73,7 +73,7 @@ let rec ltr_cbv_norm (t : pterm) : pterm =
 
   let rec ltr_cbv_norm_timeout (t : pterm) (max_steps : int) (steps : int) : pterm option =
     if steps >= max_steps then
-      failwith "Divergence detectee" 
-      match ltr_cbv_step t with
+      failwith "Divergence detectee"
+    else match ltr_cbv_step t with
       | Some t' -> ltr_cbv_norm_timeout t' max_steps (steps + 1)
       | None -> Some t
