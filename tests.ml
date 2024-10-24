@@ -39,4 +39,12 @@ let tester_exemples () =
     print_endline "----"
   ) exemples;;
 
+(* -------------------------------------------------- *)
+(* Exemple de substitution *)
+let t = Arr (Var "T1", Var "T2")
+let t_substitue = subst_type_in_type "T1" Nat t
+
+(* Afficher le résultat *)
+let () = print_endline (print_ptype t_substitue)
+
 tester_exemples ();;
