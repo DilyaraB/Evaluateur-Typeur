@@ -1,4 +1,5 @@
 #use "evaluateur.ml";;
+#use "types.ml";;
 
 
 (* ------------Combinateurs----------- *)
