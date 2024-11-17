@@ -178,40 +178,40 @@ let rec unify1 (eqs : equa) (s : substitution) : substitution =
   | _ -> failwith ("Unification a échoué")
 
 
-  let rec unify2 (eqs : equa) (s : substitution) (steps : int) (max_steps : int) : substitution option =
-    if steps >= max_steps then None
-    else
-      match eqs with 
-      | [] -> Some s 
-      | (t1, t2) :: rest when t1 = t2 -> unify2 rest s (steps + 1) max_steps
-      | (Weak t1, t2) :: rest ->
-          let t' = barendregtisation t1 in
-          unify2 ((t', t2) :: rest) s (steps + 1) max_steps
-      | (t1, Weak t2) :: rest ->
-          let t' = barendregtisation t2 in
-          unify2 ((t1, t') :: rest) s (steps + 1) max_steps
-      | (Forall (x, t1), t2) :: rest ->
-          let t' = barendregtisation t1 in
-          unify2 ((t', t2) :: rest) s (steps + 1) max_steps
-      | (t1, Forall (x, t2)) :: rest ->
-          let t' = barendregtisation t2 in
-          unify2 ((t1, t') :: rest) s (steps + 1) max_steps
-      | (List t1, List t2) :: rest ->
-          unify2 ((t1, t2) :: rest) s (steps + 1) max_steps
-      | (Arr (t1l, t1r), Arr (t2l, t2r)) :: rest ->
-          unify2 ((t1l, t2l) :: (t1r, t2r) :: rest) s (steps + 1) max_steps
-      | (Ref t1, Ref t2) :: rest ->
-          unify2 ((t1, t2) :: rest) s (steps + 1) max_steps
-      | (Var v, t) :: rest | (t, Var v) :: rest ->
-          if occur_check v t then 
-            None
-          else 
-            let new_s = (v, t) :: s in
-            let new_rest = subst_type_in_equa v t rest in
-            unify2 new_rest new_s (steps + 1) max_steps
-      | (Unit, Unit) :: rest ->
-          unify2 rest s (steps + 1) max_steps
-      | _ -> failwith ("Unification a échoué")
+let rec unify2 (eqs : equa) (s : substitution) (steps : int) (max_steps : int) : substitution option =
+  if steps >= max_steps then None
+  else
+    match eqs with 
+    | [] -> Some s 
+    | (t1, t2) :: rest when t1 = t2 -> unify2 rest s (steps + 1) max_steps
+    | (Weak t1, t2) :: rest ->
+        let t' = barendregtisation t1 in
+        unify2 ((t', t2) :: rest) s (steps + 1) max_steps
+    | (t1, Weak t2) :: rest ->
+        let t' = barendregtisation t2 in
+        unify2 ((t1, t') :: rest) s (steps + 1) max_steps
+    | (Forall (x, t1), t2) :: rest ->
+        let t' = barendregtisation t1 in
+        unify2 ((t', t2) :: rest) s (steps + 1) max_steps
+    | (t1, Forall (x, t2)) :: rest ->
+        let t' = barendregtisation t2 in
+        unify2 ((t1, t') :: rest) s (steps + 1) max_steps
+    | (List t1, List t2) :: rest ->
+        unify2 ((t1, t2) :: rest) s (steps + 1) max_steps
+    | (Arr (t1l, t1r), Arr (t2l, t2r)) :: rest ->
+        unify2 ((t1l, t2l) :: (t1r, t2r) :: rest) s (steps + 1) max_steps
+    | (Ref t1, Ref t2) :: rest ->
+        unify2 ((t1, t2) :: rest) s (steps + 1) max_steps
+    | (Var v, t) :: rest | (t, Var v) :: rest ->
+        if occur_check v t then 
+          None
+        else 
+          let new_s = (v, t) :: s in
+          let new_rest = subst_type_in_equa v t rest in
+          unify2 new_rest new_s (steps + 1) max_steps
+    | (Unit, Unit) :: rest ->
+        unify2 rest s (steps + 1) max_steps
+    | _ -> failwith ("Unification a échoué")
   
   
   (* Résout un système d'équations avec un nombre maximal d'étapes *)

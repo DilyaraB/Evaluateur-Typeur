@@ -114,7 +114,7 @@ let rec substitution (x : string) (n : pterm) (t : pterm) : pterm =
 
 let rec is_value (t : pterm) : bool =
   match t with 
-  | Var _ -> true
+  | Var _ -> true 
   | Abs (_, _) -> true
   | Int _ -> true
   | Cons (e1, e2) when is_value e1 && is_value e2 -> true
@@ -142,12 +142,13 @@ let rec ltr_cbv_step (t : pterm) (mem : memory) : (pterm * memory) option =
       | Some (t1', mem') -> Some (Let (x, t1', t2), mem')
       | None -> None)
 
+  | Fix (Abs (x, t1)) ->
+      let substituted = substitution x (Fix (Abs (x, t1))) t1 in
+      Some (substituted, mem)
   | Fix t1 ->
-    (match t1 with
-    | Abs (x, t2) -> Some (substitution x (Fix t1) t2, mem)
-    | _ -> (match ltr_cbv_step t1 mem with
-            | Some (t1', mem') -> Some (Fix t1', mem')
-            | None -> None))
+    (match ltr_cbv_step t1 mem with
+      | Some (t1', mem') -> Some (Fix (t1'), mem')
+      | None -> None)
 
   | IfZero (Int 0, t2, _) -> Some (t2, mem)
   | IfZero (Int _, _, t3) -> Some (t3, mem)

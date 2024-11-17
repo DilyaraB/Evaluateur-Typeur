@@ -49,6 +49,19 @@ let exemples_reduction = [
   ("3 - 5", sub_3_5);
 ]
 
+(* Tests pour des termes impliquant Fix et Let *)
+let fix_term = Fix (Abs ("f", Abs ("x", IfZero (Var "x", Int 1, App (Var "f", Sub (Var "x", Int 1)))))) (* fix f. λx. if x = 0 then 1 else f (x-1) *)
+
+let let_term = Let ("x", Int 5, Add (Var "x", Int 3)) (* let x = 5 in x + 3 *)
+
+let if_zero_term = IfZero (Int 0, Int 42, Int 0) (* if zero 0 then 42 else 0 *)
+
+let exemples_reduction_complexes = [
+  ("Fix Term (factorial-like function)", fix_term);
+  ("Let Term (let x = 5 in x + 3)", let_term);
+  ("IfZero Term (if zero 0 then 42 else 0)", if_zero_term);
+]
+
 (* Tester la réduction *)
 let tester_reduction () =
   List.iter (fun (nom, terme) ->
@@ -57,6 +70,14 @@ let tester_reduction () =
     | Some (result, _) -> printf "%s\n----\n" (print_term result)
     | None -> print_endline "La réduction a atteint le nombre maximal de pas ou divergence détectée"
   ) exemples_reduction
+
+let tester_reduction_complexe () =
+  List.iter (fun (nom, terme) ->
+    printf "Test de réduction complexe pour %s :\n" nom;
+    match ltr_cbv_norm_timeout terme [] 100 0 with
+    | Some (result, _) -> printf "%s\n----\n" (print_term result)
+    | None -> print_endline "La réduction a atteint le nombre maximal de pas ou divergence détectée"
+  ) exemples_reduction_complexes
 
 (* ------------Tests de substitution ----------- *)
 let tester_substitution () =
@@ -74,6 +95,41 @@ let tester_substitution () =
   printf "Term : %s\n" (print_term term);
   printf "Résultat après substitution : %s\n" (print_term substitution_result);
   print_endline "----"
+
+let tester_substitution_complexe () =
+  (* Substitution avec un Let *)
+  let term = Let ("y", Var "x", Add (Var "y", Int 5)) in
+  let substitution_result = substitution "x" (Int 10) term in
+  printf "Test de substitution complexe (avec Let) :\n";
+  printf "Term : %s\n" (print_term term);
+  printf "Résultat après substitution : %s\n" (print_term substitution_result);
+  print_endline "----";
+
+  (* Substitution avec Fix *)
+  let term = Fix (Abs ("f", Add (Var "f", Var "x"))) in
+  let substitution_result = substitution "x" (Int 20) term in
+  printf "Test de substitution complexe (avec Fix) :\n";
+  printf "Term : %s\n" (print_term term);
+  printf "Résultat après substitution : %s\n" (print_term substitution_result);
+  print_endline "----"
+
+let tester_alphaconv () =
+  (* Alphaconversion simple pour éviter les conflits *)
+  let term = Abs ("x", Abs ("x", Add (Var "x", Var "y"))) in
+  let alphaconv_result = alphaconv term [] in
+  printf "Test d'alphaconversion :\n";
+  printf "Term : %s\n" (print_term term);
+  printf "Résultat après alphaconversion : %s\n" (print_term alphaconv_result);
+  print_endline "----";
+
+  (* Alphaconversion pour des termes imbriqués *)
+  let term = Abs ("x", App (Abs ("y", App (Var "x", Var "y")), Var "x")) in
+  let alphaconv_result = alphaconv term [] in
+  printf "Test d'alphaconversion imbriquée :\n";
+  printf "Term : %s\n" (print_term term);
+  printf "Résultat après alphaconversion : %s\n" (print_term alphaconv_result);
+  print_endline "----"
+  
 
 (* ------------Tests de typage ----------- *)
 (* Tests pour la fonction genere_equa *)
@@ -205,7 +261,10 @@ let tester_unify () =
 let () =
   printf "===== Début des tests =====\n";
   tester_reduction ();
+  tester_reduction_complexe ();
   tester_substitution ();
+  tester_substitution_complexe ();
+  tester_alphaconv ();
   tester_genere_equa ();
   tester_cherche_type ();
   tester_generalise_type ();
