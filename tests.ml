@@ -30,36 +30,81 @@ let add_3_5 = Add (nat_3, nat_5)
 let sub_5_3 = Sub (nat_5, nat_3)  
 let sub_3_5 = Sub (nat_3, nat_5)  
 
-(* ------------Tests de valeurs ----------- *)
+(* ------------ Tests des références ----------- *)
+let ref_42 = Ast.Ref (Int 42)
+let deref_ref = Deref (ref_42)
+let assign_test = Let ("r", Ast.Ref (Int 0), Assign (Var "r", Int 10))
+
+(* ------------ Tests des listes ----------- *)
+let empty_list = Nil
+let list_1_2_3 = Cons (Int 1, Cons (Int 2, Cons (Int 3, Nil)))
+let head_list = Tete list_1_2_3
+let tail_list = Queue list_1_2_3
+let is_empty_test = IfEmpty (empty_list, Int 1, Int 0)
+
+(* ------------ Tests de fonctions récursives ----------- *)
+(* Fonction Fibonacci *)
+let fib = Fix (Abs ("fib", Abs ("n",
+    IfZero (Var "n", Int 0,
+    IfZero (Sub (Var "n", Int 1), Int 1,
+    Add (App (Var "fib", Sub (Var "n", Int 1)), App (Var "fib", Sub (Var "n", Int 2)))
+    )))))
+
+let fib_5 = App (fib, Int 5)
+
+(* ------------ Tests combinant plusieurs constructs ----------- *)
+let complex_term = Let ("x", Int 5,
+                    Let ("y", Add (Var "x", Int 3),
+                        Let ("z", Cons (Var "y", Nil),
+                            Tete (Var "z")
+                        )
+                    )
+                )
+
+(* ------------ Tests de valeurs ----------- *)
 let exemples_reduction = [
   ("I", i);
-  ("δ", delta);  
-  (* ("Ω", omega);  *)
-  ("S", s); 
-  ("S K K", skk); 
-  ("S I I", sii);  
-  ("Church 0", church_0); 
-  ("Church 1", church_1);  
-  ("Church 2", church_2); 
+  ("δ", delta);
+  (* ("Ω", omega);  (* Commenté car diverge *) *)
+  ("S", s);
+  ("S K K", skk);
+  ("S I I", sii);
+  ("Church 0", church_0);
+  ("Church 1", church_1);
+  ("Church 2", church_2);
   ("Church 3", church_3);
   ("Int 3", nat_3);
   ("Int 5", nat_5);
   ("3 + 5", add_3_5);
   ("5 - 3", sub_5_3);
   ("3 - 5", sub_3_5);
+  ("Reference to 42", ref_42);
+  ("Dereference ref 42", deref_ref);
+  ("Assign 10 to ref", assign_test);
+  ("Empty List", empty_list);
+  ("List 1 2 3", list_1_2_3);
+  ("Head of list", head_list);
+  ("Tail of list", tail_list);
+  ("Is empty test", is_empty_test);
 ]
 
+
 (* Tests pour des termes impliquant Fix et Let *)
-let fix_term = Fix (Abs ("f", Abs ("x", IfZero (Var "x", Int 1, App (Var "f", Sub (Var "x", Int 1)))))) (* fix f. λx. if x = 0 then 1 else f (x-1) *)
+let sum_to_n = Fix (Abs ("f", Abs ("n",
+    IfZero (Var "n", Int 0, Add (Var "n", App (Var "f", Sub (Var "n", Int 1)))))
+))
+let sum_to_5 = App (sum_to_n, Int 5)
 
 let let_term = Let ("x", Int 5, Add (Var "x", Int 3)) (* let x = 5 in x + 3 *)
 
 let if_zero_term = IfZero (Int 0, Int 42, Int 0) (* if zero 0 then 42 else 0 *)
 
 let exemples_reduction_complexes = [
-  ("Fix Term (factorial-like function)", fix_term);
+  ("Sum to 5", sum_to_5);
+  ("Fibonacci of 5", fib_5);
   ("Let Term (let x = 5 in x + 3)", let_term);
   ("IfZero Term (if zero 0 then 42 else 0)", if_zero_term);
+  ("Complex Term", complex_term);
 ]
 
 (* Tester la réduction *)

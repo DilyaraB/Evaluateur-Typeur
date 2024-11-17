@@ -21,6 +21,7 @@ let rec print_term (t : pterm) : string =
   | Ref e -> "ref (" ^ (print_term e) ^ ")"
   | Deref e -> "!(" ^ (print_term e) ^ ")"
   | Assign (e1, e2) -> "(" ^ (print_term e1) ^ " := " ^ (print_term e2) ^ ")"
+  | Nil -> "[]"
 
 
 let next_ref_id = ref 0
@@ -114,10 +115,10 @@ let rec substitution (x : string) (n : pterm) (t : pterm) : pterm =
 
 let rec is_value (t : pterm) : bool =
   match t with 
-  | Var _ -> true 
   | Abs (_, _) -> true
   | Int _ -> true
   | Cons (e1, e2) when is_value e1 && is_value e2 -> true
+  | Nil -> true
   | _ -> false
 
 
