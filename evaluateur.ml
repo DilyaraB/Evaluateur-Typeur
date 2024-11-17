@@ -22,13 +22,6 @@ let rec print_term (t : pterm) : string =
   | Assign (e1, e2) -> "(" ^ (print_term e1) ^ " := " ^ (print_term e2) ^ ")"
 
 
-let compteur_var = ref 0
-(* Génère une nouvelle variable *)
-let nouvelle_var () : string =
-  compteur_var := !compteur_var + 1;
-  "X" ^ string_of_int !compteur_var
-
-
 let next_ref_id = ref 0
 (* Génère une nouvelle référence *)
 let nouvelle_ref () =
@@ -52,6 +45,12 @@ let rec update_memory (ref_id : int) (value : pterm) (mem : memory) : memory =
 
 (* Une liste d'associations *)    
 type env_subst = (string * string) list
+
+let compteur_var = ref 0
+(* Génère une nouvelle variable *)
+let nouvelle_var () : string =
+  compteur_var := !compteur_var + 1;
+  "X" ^ string_of_int !compteur_var
 
 (* Renomme toutes les variables liees *)
 let rec alphaconv (t : pterm) (env : env_subst) : pterm =
