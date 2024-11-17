@@ -1,9 +1,10 @@
-#mod_use "ast.ml";;
+(* #mod_use "ast.ml";;
 #mod_use "evaluateur.ml";;
-#mod_use "types.ml";;
-
-open Printf
-
+#mod_use "types.ml";; *)
+open Ast;;
+open Evaluateur;;
+open Types;;
+open Printf;;
 
 (* ------------Combinateurs----------- *)
 let i = Abs ("x", Var "x")
@@ -64,14 +65,78 @@ let tester_substitution () =
   printf "Test de substitution :\n";
   printf "Term : %s\n" (print_term term);
   printf "Résultat après substitution : %s\n" (print_term substitution_result);
+  print_endline "----";
+
+  (* Substitution complexe : variable liée dans plusieurs scopes *)
+  let term = Abs ("y", App (Var "x", Abs ("y", App (Var "y", Var "x")))) in 
+  let substitution_result = substitution "x" (Int 42) term in
+  printf "Test de substitution complexe :\n";
+  printf "Term : %s\n" (print_term term);
+  printf "Résultat après substitution : %s\n" (print_term substitution_result);
   print_endline "----"
 
 (* ------------Tests de typage ----------- *)
+(* Tests pour la fonction genere_equa *)
+let tester_genere_equa () =
+  (* Cas simple : identité *)
+  let term = Abs ("x", Var "x") in
+  let ty = Var (nouvelle_var_t ()) in
+  let env = [] in
+  let equations = genere_equa term ty env in
+  printf "Test de genere_equa (λx. x) :\n";
+  List.iter (fun (t1, t2) ->
+    printf "%s = %s\n" (print_type t1) (print_type t2)
+  ) equations;
+  print_endline "----";
+
+  (* Cas avec une application *)
+  let term = App (Abs ("x", Var "x"), Int 5) in
+  let ty = Var (nouvelle_var_t ()) in
+  let env = [] in
+  let equations = genere_equa term ty env in
+  printf "Test de genere_equa ((λx. x) 5) :\n";
+  List.iter (fun (t1, t2) ->
+    printf "%s = %s\n" (print_type t1) (print_type t2)
+  ) equations;
+  print_endline "----";
+
+  (* Cas plus complexe avec Let *)
+  let term = Let ("y", Int 5, Add (Var "y", Int 3)) in
+  let ty = Var (nouvelle_var_t ()) in
+  let env = [] in
+  let equations = genere_equa term ty env in
+  printf "Test de genere_equa (let y = 5 in y + 3) :\n";
+  List.iter (fun (t1, t2) ->
+    printf "%s = %s\n" (print_type t1) (print_type t2)
+  ) equations;
+  print_endline "----";
+
+  (* Cas avec une quantification universelle *)
+  let term = Abs ("x", Var "x") in
+  let ty = Forall ("a", Arr (Var "a", Var "a")) in
+  let env = [] in
+  let equations = genere_equa term ty env in
+  printf "Test de genere_equa avec quantification universelle :\n";
+  List.iter (fun (t1, t2) ->
+    printf "%s = %s\n" (print_type t1) (print_type t2)
+  ) equations;
+  print_endline "----"
+
 let tester_cherche_type () =
   let env = [("x", Nat); ("y", Arr (Nat, Nat))] in
   printf "Test de cherche_type :\n";
-  printf "Type de x : %s\n" (print_type (cherche_type "x" env));
-  printf "Type de y : %s\n" (print_type (cherche_type "y" env));
+  (match cherche_type "x" env with
+  | Some t -> printf "Type de x : %s\n" (print_type t)
+  | None -> printf "Type de x : non trouvé\n");
+  
+  (match cherche_type "y" env with
+  | Some t -> printf "Type de y : %s\n" (print_type t)
+  | None -> printf "Type de y : non trouvé\n");
+  
+  (match cherche_type "z" env with
+  | Some t -> printf "Type de z : %s\n" (print_type t)
+  | None -> printf "Type de z : non trouvé\n");
+  
   print_endline "----"
 
 let tester_generalise_type () =
@@ -80,12 +145,27 @@ let tester_generalise_type () =
   let generalized = generalise_type t env in
   printf "Test de generalise_type :\n";
   printf "Généralisation de %s : %s\n" (print_type t) (print_type generalized);
+  print_endline "----";
+
+  (* Cas complexe de généralisation avec plusieurs variables libres *)
+  let t = Arr (Var "a", Arr (Var "b", Var "c")) in
+  let env = [("a", Nat)] in
+  let generalized = generalise_type t env in
+  printf "Test de generalise_type complexe :\n";
+  printf "Généralisation de %s : %s\n" (print_type t) (print_type generalized);
   print_endline "----"
 
 let tester_subst_type_in_type () =
   let t = Arr (Var "T1", Nat) in
   let t_substitue = subst_type_in_type "T1" Nat t in
   printf "Test de subst_type_in_type :\n";
+  printf "Résultat après substitution : %s\n" (print_type t_substitue);
+  print_endline "----";
+
+  (* Cas complexe de substitution dans un type imbriqué *)
+  let t = Arr (Var "T1", Arr (List (Var "T1"), Var "T2")) in
+  let t_substitue = subst_type_in_type "T1" Nat t in
+  printf "Test de subst_type_in_type complexe :\n";
   printf "Résultat après substitution : %s\n" (print_type t_substitue);
   print_endline "----"
 
@@ -97,12 +177,27 @@ let tester_unify () =
     (Var "T4", Arr (Var "T1", Var "T5"))
   ] in
   printf "Test de unify :\n";
-  match resoudre_avec_timeout eqs 10.0 with
+  match resoudre_avec_timeout eqs 100 with
   | Some subst ->
     List.iter (fun (v, t) ->
       printf "Substitution : %s -> %s\n" v (print_type t)
     ) subst
-  | None -> print_endline "Unification échouée ou timeout";;
+  | None -> print_endline "Unification échouée ou timeout";
+  print_endline "----";
+
+  (* Cas complexe d'unification avec des listes et références *)
+  let eqs = [
+    (Ref (Var "T1"), Ref (Nat));
+    (List (Arr (Var "T2", Nat)), Var "T3");
+    (Var "T4", Arr (Var "T2", Ref (Var "T5")))
+  ] in
+  printf "Test de unify complexe :\n";
+  match resoudre_avec_timeout eqs 100 with
+  | Some subst ->
+    List.iter (fun (v, t) ->
+      printf "Substitution : %s -> %s\n" v (print_type t)
+    ) subst
+  | None -> print_endline "Unification échouée ou timeout";
   print_endline "----"
 
 
@@ -111,8 +206,9 @@ let () =
   printf "===== Début des tests =====\n";
   tester_reduction ();
   tester_substitution ();
+  tester_genere_equa ();
   tester_cherche_type ();
   tester_generalise_type ();
   tester_subst_type_in_type ();
   tester_unify ();
-  printf "===== Fin des tests =====\n"
+  printf "===== Fin des tests =====\n";

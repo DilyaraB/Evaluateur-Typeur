@@ -1,4 +1,5 @@
-#use "ast.ml";;
+(* #use "ast.ml";; *)
+open Ast;;
 
 (* Conversion des termes en chaines de caracteres lisibles *)
 let rec print_term (t : pterm) : string =
@@ -119,11 +120,7 @@ let rec is_value (t : pterm) : bool =
   | Cons (e1, e2) when is_value e1 && is_value e2 -> true
   | _ -> false
 
-(* 
-1. Lorsqu'on est face à une application M N, on commence par tenter de réduire M (la fonction), avant de réduire N (l'argument);
-2. Variable, abstraction on ne peut pas reduire;
-3. La réduction β s'applique uniquement lorsque l'argument est une valeur
- *)
+
 let rec ltr_cbv_step (t : pterm) (mem : memory) : (pterm * memory) option =
   match t with
   | Var _ | Int _ | Abs (_, _) | Nil -> None  (* Ce sont des valeurs, on ne réduit pas *)
